@@ -15,7 +15,7 @@ OptitrackBridgeNode::OptitrackBridgeNode() : rclcpp::Node("optitrack_bridge2") {
     this->get_parameter("frame_id", frame_id_);
     this->get_parameter("hz", hz_);
 
-    this->create_wall_timer(
+    timer_ = this->create_wall_timer(
         std::chrono::operator""s(1.0 / hz_),
         std::bind(&OptitrackBridgeNode::loop_, this)
     );
@@ -27,12 +27,18 @@ OptitrackBridgeNode::OptitrackBridgeNode() : rclcpp::Node("optitrack_bridge2") {
 void OptitrackBridgeNode::loop_() {
     static bool initialized = false;
     if(!initialized) {
-        natnet_wrapper::NatNetWrapper::run();
+        if(natnet_wrapper::NatNetWrapper::run() != 0) {
+            // if natnet wrapper initialization failed, escape
+            rclcpp::shutdown();
+            return;
+        }
+        initialized = true;
     }
 
     natnet_wrapper::NatNetWrapper::get_poses(body_names_, poses_);
     if(body_names_.size() != poses_.size()) {
         RCLCPP_WARN(this->get_logger(), "sizes of body_names(%d) and poses(%d) do not match!", body_names_.size(), poses_.size());
+        RCLCPP_WARN(this->get_logger(), "not publishing..");
         return;
     }
 

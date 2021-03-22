@@ -9,7 +9,7 @@
 namespace natnet_wrapper {
 
 NatNetWrapper& NatNetWrapper::instance() {
-    static NatNetWrapper i{};
+    static NatNetWrapper i;
     return i;
 }
 

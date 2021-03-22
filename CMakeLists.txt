@@ -46,13 +46,15 @@ ament_target_dependencies(node rclcpp std_msgs geometry_msgs)
 
 target_link_libraries(node ${natnet_lib})
 
-install(TARGETS
-    node
+# install
+ament_export_libraries(${natnet_lib})
+install(
+    TARGETS node
     DESTINATION lib/${PROJECT_NAME}
 )
 install(FILES
-    ${natnet_lib_file}
-    DESTINATION lib/${PROJECT_NAME}
+    ${natnet_lib}
+    DESTINATION lib
 )
 
 ament_package()

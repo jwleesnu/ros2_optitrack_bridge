@@ -6,11 +6,15 @@
 
 #include "optitrack_bridge2/natnet_wrapper.h"
 
+// void server_discovered_callback_wrapper(const sNatNetDiscoveredServer* p_discovered_server, void* p_user_context) {
+//     natnet_wrapper::NatNetWrapper::server_discovered_callback(p_discovered_server, p_user_context);
+// }
+
 namespace natnet_wrapper {
 
 NatNetWrapper& NatNetWrapper::instance() {
-    static NatNetWrapper i;
-    return i;
+    static NatNetWrapper* i = new NatNetWrapper();
+    return *i;
 }
 
 void NatNetWrapper::server_discovered_callback(const sNatNetDiscoveredServer* p_discovered_server, void* p_user_context) {
@@ -161,6 +165,7 @@ void NatNetWrapper::message_handler(Verbosity msg_type, const char* msg) {
 
             case Verbosity_Error:
             RCLCPP_ERROR(instance().logger_, "%s", msg);
+            break;
 
             default:
             break;
@@ -215,9 +220,9 @@ int NatNetWrapper::connect_client() {
         instance().server_description_.NatNetVersion[0], instance().server_description_.NatNetVersion[1],
         instance().server_description_.NatNetVersion[2], instance().server_description_.NatNetVersion[3]
     );
-    RCLCPP_INFO(instance().logger_, "Client IP:%s\n", instance().connect_params_.localAddress);
-    RCLCPP_INFO(instance().logger_, "Server IP:%s\n", instance().connect_params_.serverAddress);
-    RCLCPP_INFO(instance().logger_, "Server Name:%s\n", instance().server_description_.szHostComputerName);
+    RCLCPP_INFO(instance().logger_, "Client IP:%s", instance().connect_params_.localAddress);
+    RCLCPP_INFO(instance().logger_, "Server IP:%s", instance().connect_params_.serverAddress);
+    RCLCPP_INFO(instance().logger_, "Server Name:%s", instance().server_description_.szHostComputerName);
 
     // get mocap frame rate
     ret = instance().client_->SendMessageAndWait("FrameRate", &result, &n_bytes);
@@ -248,9 +253,9 @@ void NatNetWrapper::set_frame_id(const std::string& frame_id) {
 NatNetWrapper::NatNetWrapper()
   : logger_(rclcpp::get_logger("NatNetWrapper")),
     default_connection_type_(ConnectionType_Multicast),
-    client_(new NatNetClient()),
+    client_(nullptr),
     is_server_discovered_(false),
-    verbosity_(Verbosity_Warning),
+    verbosity_(Verbosity_Debug),
     listening_(false),
     show_latency_(false)
 { }
@@ -264,6 +269,8 @@ int NatNetWrapper::run() {
     // Install logging callback
     NatNet_SetLogCallback(NatNetWrapper::message_handler);
 
+    instance().client_ = std::make_unique<NatNetClient>();
+
     // set the frame callback handler
     instance().client_->SetFrameReceivedCallback(NatNetWrapper::data_handler, instance().client_.get());
 
@@ -273,6 +280,7 @@ int NatNetWrapper::run() {
 
     instance().is_server_discovered_ = false;
     NatNetDiscoveryHandle discovery;
+    // NatNet_CreateAsyncServerDiscovery(&discovery, NatNetWrapper::server_discovered_callback);
     NatNet_CreateAsyncServerDiscovery(&discovery, NatNetWrapper::server_discovered_callback);
 
     // try for 2 second
@@ -282,6 +290,7 @@ int NatNetWrapper::run() {
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
+
     NatNet_FreeAsyncServerDiscovery( discovery );
 
     // if server is not discovered, leave.
@@ -343,12 +352,16 @@ int NatNetWrapper::run() {
     if(result == ErrorCode_OK) {
         RCLCPP_INFO(instance().logger_, "Received: %s", (char*)response);
     }
-    
+    else {
+        RCLCPP_WARN(instance().logger_, "Received: %s", (char*)response);
+    }
+
     RCLCPP_INFO(instance().logger_, "Requesting data descriptions..");
     sDataDescriptions* data_defs = NULL;
     result = instance().client_->GetDataDescriptionList(&data_defs);
     if(result != ErrorCode_OK || data_defs == NULL) {
         RCLCPP_WARN(instance().logger_, "Unable to retrieve data descriptions.");
+        return 1;
     }
     else {
         RCLCPP_INFO(instance().logger_, "Received %d data descriptions: ", data_defs->nDataDescriptions);
@@ -391,7 +404,6 @@ int NatNetWrapper::run() {
         instance().listening_ = true;
         return 0;
     }
-    return 1;
 }
 
 void NatNetWrapper::get_poses(std::vector<std::string>& body_names, std::vector<geometry_msgs::msg::PoseStamped>& poses) {
@@ -405,6 +417,7 @@ NatNetWrapper::~NatNetWrapper() {
         // clean up
         client_->Disconnect();
     }
+    delete &instance();
 }
 
 }

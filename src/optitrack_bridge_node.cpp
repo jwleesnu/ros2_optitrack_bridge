@@ -28,11 +28,15 @@ void OptitrackBridgeNode::loop_() {
     static bool initialized = false;
     if(!initialized) {
         if(natnet_wrapper::NatNetWrapper::run() != 0) {
-            // if natnet wrapper initialization failed, escape
+            // if natnet wrapper initialization failed, escape after 100 ms
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
             rclcpp::shutdown();
             return;
         }
         initialized = true;
+
+        // pause for 300 ms to prevent the node from publishing 0 0 0 ...
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
     }
 
     natnet_wrapper::NatNetWrapper::get_poses(body_names_, poses_);
@@ -48,12 +52,12 @@ void OptitrackBridgeNode::loop_() {
             // add new topic
             std::string topic_name;
             if(pose_prefix_.length() > 0) {
-                topic_name = pose_prefix_ + "/" + body_names_[i];
+                topic_name = pose_prefix_ + body_names_[i];
             }
             else {
                 topic_name = body_names_[i];
             }
-            auto pub = this->create_publisher<geometry_msgs::msg::PoseStamped>(topic_name, 1);
+            rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pub = this->create_publisher<geometry_msgs::msg::PoseStamped>(topic_name, 1);
             publishers_.insert(std::make_pair(
                 body_names_[i], pub
             ));
@@ -63,6 +67,7 @@ void OptitrackBridgeNode::loop_() {
             // use existing publisher
             find_result->second->publish(poses_[i]);
         }
+        RCLCPP_INFO_THROTTLE(this->get_logger(), *(this->get_clock()), 3000, "%s is being published...", body_names_[i].c_str());
     }
 }
 

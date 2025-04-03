@@ -41,7 +41,7 @@ void OptitrackBridgeNode::loop_() {
 
     natnet_wrapper::NatNetWrapper::get_poses(body_names_, poses_);
     if(body_names_.size() != poses_.size()) {
-        RCLCPP_WARN(this->get_logger(), "sizes of body_names(%d) and poses(%d) do not match!", body_names_.size(), poses_.size());
+        RCLCPP_WARN(this->get_logger(), "sizes of body_names(%d) and poses(%d) do not match!", static_cast<int>(body_names_.size()), static_cast<int>(poses_.size()));
         RCLCPP_WARN(this->get_logger(), "not publishing..");
         return;
     }

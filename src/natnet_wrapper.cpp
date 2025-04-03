@@ -141,7 +141,7 @@ void NatNetWrapper::data_handler(sFrameOfMocapData* data, void* p_user_data) {
         else {
             RCLCPP_WARN_THROTTLE(
                 instance().logger_, instance().clock_, 500,
-                "%s pose tracking invalid", instance().body_names_[i]
+                "%s pose tracking invalid", instance().body_names_[i].c_str()
             );
         }
     }

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(optitrack_bridge2)
+project(ros2_optitrack_bridge)
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
@@ -20,9 +20,10 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(px4_msgs REQUIRED)
 
 # find natnet lib
-find_library(natnet_lib libNatNetLibShared.so PATHS ${PROJECT_SOURCE_DIR}/lib)
+# find_library(natnet_lib libNatNetLibShared.so PATHS ${PROJECT_SOURCE_DIR}/lib)
 
 include_directories(include)
 
@@ -37,24 +38,35 @@ if(BUILD_TESTING)
     ament_lint_auto_find_test_dependencies()
 endif()
 
-add_executable(node
-    src/main.cpp
-    src/optitrack_bridge_node.cpp
+add_executable(pose
+    src/optitrack_bridge_pose.cpp
     src/natnet_wrapper.cpp
 )
-ament_target_dependencies(node rclcpp std_msgs geometry_msgs)
+ament_target_dependencies(pose rclcpp std_msgs geometry_msgs)
 
-target_link_libraries(node ${natnet_lib})
+add_executable(px4
+    src/optitrack_bridge_px4.cpp
+    #src/natnet_wrapper.cpp
+)
+ament_target_dependencies(px4 rclcpp std_msgs geometry_msgs px4_msgs)
+
+
+target_link_libraries(pose ${natnet_lib})
+#target_link_libraries(px4 ${natnet_lib})
 
 # install
-ament_export_libraries(${natnet_lib})
+# ament_export_libraries(${natnet_lib})
 install(
-    TARGETS node
+    TARGETS pose
     DESTINATION lib/${PROJECT_NAME}
 )
-install(FILES
-    ${natnet_lib}
-    DESTINATION lib
-)
+#install(
+    #TARGETS px4
+    #DESTINATION lib/${PROJECT_NAME}
+#)
+#install(FILES
+    #${natnet_lib}
+    #DESTINATION lib
+#)
 
 ament_package()

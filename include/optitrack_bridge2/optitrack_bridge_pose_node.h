@@ -13,10 +13,10 @@
 
 namespace optitrack {
 
-class OptitrackBridgeNode : public rclcpp::Node {
+class OptitrackBridgePoseNode : public rclcpp::Node {
 
     public:
-    OptitrackBridgeNode();
+    OptitrackBridgePoseNode();
 
     private:
     rclcpp::TimerBase::SharedPtr timer_;
@@ -41,6 +41,7 @@ class OptitrackBridgeNode : public rclcpp::Node {
 
 };
 
-}
+
+}//end namespace
 
 #endif

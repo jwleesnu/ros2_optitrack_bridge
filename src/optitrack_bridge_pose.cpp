@@ -1,11 +1,12 @@
-#include "optitrack_bridge2/optitrack_bridge_node.h"
+#include "optitrack_bridge2/optitrack_bridge_pose_node.h"
 #include "optitrack_bridge2/natnet_wrapper.h"
+#include <rclcpp/rclcpp.hpp>
 
 using namespace std::chrono_literals;
 
 namespace optitrack {
 
-OptitrackBridgeNode::OptitrackBridgeNode() : rclcpp::Node("optitrack_bridge2") {
+OptitrackBridgePoseNode::OptitrackBridgePoseNode() : rclcpp::Node("optitrack_pose") {
 
     // parameter setting
     this->declare_parameter<std::string>("pose_prefix", "optitrack");
@@ -17,14 +18,16 @@ OptitrackBridgeNode::OptitrackBridgeNode() : rclcpp::Node("optitrack_bridge2") {
 
     timer_ = this->create_wall_timer(
         std::chrono::operator""s(1.0 / hz_),
-        std::bind(&OptitrackBridgeNode::loop_, this)
+        std::bind(&OptitrackBridgePoseNode::loop_, this)
     );
 
     natnet_wrapper::NatNetWrapper::set_logger(this->get_logger());
     natnet_wrapper::NatNetWrapper::set_frame_id(frame_id_);
+
+    
 }
 
-void OptitrackBridgeNode::loop_() {
+void OptitrackBridgePoseNode::loop_() {
     static bool initialized = false;
     if(!initialized) {
         if(natnet_wrapper::NatNetWrapper::run() != 0) {
@@ -71,4 +74,11 @@ void OptitrackBridgeNode::loop_() {
     }
 }
 
+}
+
+int main(int argc, char** argv) {
+    rclcpp::init(argc, argv);
+    rclcpp::spin(std::make_shared<optitrack::OptitrackBridgePoseNode>());
+    rclcpp::shutdown();
+    return 0;
 }

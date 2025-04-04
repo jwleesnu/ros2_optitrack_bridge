@@ -1,5 +1,5 @@
 #include "optitrack_bridge2/optitrack_bridge_px4_node.h"
-//#include "optitrack_bridge2/natnet_wrapper.h"
+#include "optitrack_bridge2/natnet_wrapper.h"
 #include <rclcpp/rclcpp.hpp>
 #include <px4_msgs/msg/vehicle_odometry.hpp>
 
@@ -21,16 +21,15 @@ OptitrackBridgePX4Node::OptitrackBridgePX4Node() : rclcpp::Node("optitrack_px4")
         std::chrono::operator""s(1.0 / hz_),
         std::bind(&OptitrackBridgePX4Node::loop_, this)
     );
-    /*
+    
     natnet_wrapper::NatNetWrapper::set_logger(this->get_logger());
     natnet_wrapper::NatNetWrapper::set_frame_id(frame_id_);
-    */
+    
     publisher_vehicle_visual_odometry_ = this->create_publisher<px4_msgs::msg::VehicleOdometry>("/fmu/in/vehicle_visual_odometry", 1);
 }
 
 void OptitrackBridgePX4Node::loop_() {
 
-    /* "Real Code"
     static bool initialized = false;
     if(!initialized) {
         if(natnet_wrapper::NatNetWrapper::run() != 0) {
@@ -56,26 +55,8 @@ void OptitrackBridgePX4Node::loop_() {
         return;
     }
     
-    
     const auto &pose_msg = poses_[0];
-    */
-
-    //for test 
-    auto current_time = this->now();
-    geometry_msgs::msg::PoseStamped pose_msg;
-    pose_msg.header.stamp.sec = static_cast<uint32_t>(current_time.nanoseconds() / 1000000000LL);
-    pose_msg.header.stamp.nanosec = static_cast<uint32_t>(current_time.nanoseconds() % 1000000000LL);
-    pose_msg.header.frame_id = "world";
-
-    pose_msg.pose.position.x = 1.0;
-    pose_msg.pose.position.y = 2.0;
-    pose_msg.pose.position.z = 3.0;
-    pose_msg.pose.orientation.x = 0.0;
-    pose_msg.pose.orientation.y = 0.0;
-    pose_msg.pose.orientation.z = 0.0;
-    pose_msg.pose.orientation.w = 1.0;
-    //
-
+    
     px4_msgs::msg::VehicleOdometry visual_odom_msg;
 
     visual_odom_msg.timestamp = this->now().nanoseconds() / 1000;
@@ -106,7 +87,7 @@ void OptitrackBridgePX4Node::loop_() {
 
     publisher_vehicle_visual_odometry_->publish(visual_odom_msg);
     
-    // RCLCPP_INFO_THROTTLE(this->get_logger(), *(this->get_clock()), 3000, "%s is being published...", body_names_[0].c_str());
+    RCLCPP_INFO_THROTTLE(this->get_logger(), *(this->get_clock()), 3000, "%s is being published...", body_names_[0].c_str());
 }
 
 }//end namespace

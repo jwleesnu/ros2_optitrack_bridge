@@ -10,7 +10,7 @@
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <px4_msgs/msg/vehicle_odometry.hpp>
 
-//#include "optitrack_bridge2/natnet_wrapper.h"
+#include "optitrack_bridge2/natnet_wrapper.h"
 
 namespace optitrack {
 

@@ -23,7 +23,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(px4_msgs REQUIRED)
 
 # find natnet lib
-# find_library(natnet_lib libNatNetLibShared.so PATHS ${PROJECT_SOURCE_DIR}/lib)
+find_library(natnet_lib libNatNetLibShared.so PATHS ${PROJECT_SOURCE_DIR}/lib)
 
 include_directories(include)
 
@@ -46,27 +46,27 @@ ament_target_dependencies(pose rclcpp std_msgs geometry_msgs)
 
 add_executable(px4
     src/optitrack_bridge_px4.cpp
-    #src/natnet_wrapper.cpp
+    src/natnet_wrapper.cpp
 )
 ament_target_dependencies(px4 rclcpp std_msgs geometry_msgs px4_msgs)
 
 
 target_link_libraries(pose ${natnet_lib})
-#target_link_libraries(px4 ${natnet_lib})
+target_link_libraries(px4 ${natnet_lib})
 
 # install
-# ament_export_libraries(${natnet_lib})
+ament_export_libraries(${natnet_lib})
 install(
     TARGETS pose
     DESTINATION lib/${PROJECT_NAME}
 )
-#install(
-    #TARGETS px4
-    #DESTINATION lib/${PROJECT_NAME}
-#)
-#install(FILES
-    #${natnet_lib}
-    #DESTINATION lib
-#)
+install(
+    TARGETS px4
+    DESTINATION lib/${PROJECT_NAME}
+)
+install(FILES
+    ${natnet_lib}
+    DESTINATION lib
+)
 
 ament_package()

@@ -50,6 +50,10 @@ add_executable(px4
 )
 ament_target_dependencies(px4 rclcpp std_msgs geometry_msgs px4_msgs)
 
+add_executable(dummy
+    src/optitrack_dummy.cpp
+)
+ament_target_dependencies(dummy rclcpp std_msgs geometry_msgs px4_msgs)
 
 target_link_libraries(pose ${natnet_lib})
 target_link_libraries(px4 ${natnet_lib})
@@ -62,6 +66,10 @@ install(
 )
 install(
     TARGETS px4
+    DESTINATION lib/${PROJECT_NAME}
+)
+install(
+    TARGETS dummy
     DESTINATION lib/${PROJECT_NAME}
 )
 install(FILES

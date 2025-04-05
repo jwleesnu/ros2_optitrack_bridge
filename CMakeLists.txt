@@ -20,7 +20,9 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 find_package(px4_msgs REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 # find natnet lib
 find_library(natnet_lib libNatNetLibShared.so PATHS ${PROJECT_SOURCE_DIR}/lib)
@@ -44,6 +46,17 @@ add_executable(pose
 )
 ament_target_dependencies(pose rclcpp std_msgs geometry_msgs)
 
+add_executable(odometry
+    src/optitrack_bridge_odometry.cpp
+    src/linear_kalman_filter.cpp
+    src/natnet_wrapper.cpp
+)
+ament_target_dependencies(odometry rclcpp std_msgs geometry_msgs nav_msgs)
+target_include_directories(odometry PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    ${EIGEN3_INCLUDE_DIR}
+)
+
 add_executable(px4
     src/optitrack_bridge_px4.cpp
     src/natnet_wrapper.cpp
@@ -56,12 +69,18 @@ add_executable(dummy
 ament_target_dependencies(dummy rclcpp std_msgs geometry_msgs px4_msgs)
 
 target_link_libraries(pose ${natnet_lib})
+target_link_libraries(odometry ${natnet_lib})
 target_link_libraries(px4 ${natnet_lib})
+
 
 # install
 ament_export_libraries(${natnet_lib})
 install(
     TARGETS pose
+    DESTINATION lib/${PROJECT_NAME}
+)
+install(
+    TARGETS odometry
     DESTINATION lib/${PROJECT_NAME}
 )
 install(

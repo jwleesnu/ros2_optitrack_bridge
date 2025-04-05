@@ -4,12 +4,12 @@ A ROS 2 package providing four nodes for utilizing [OptiTrack](https://optitrack
 
 This package connects to an OptiTrack server (via NatNet) and transform data to suit the purpose of each node.
 <br/></br>
-## Prerequisites
+## 📑 Prerequisites
 
 - **ROS 2** (tested on Humble)
 - **px4_msgs** & **px4_ros_com** (only for `px4` node)
 <br/></br>
-## List of ROS2 Executables
+## 📑 List of ROS2 Executables
 
 - **pose**
 
@@ -27,7 +27,7 @@ This package connects to an OptiTrack server (via NatNet) and transform data to 
 
    Publishes dummy messages at `/fmu/in/vehicle_visual_odometry` topic for testing PX4 integration without an OptiTrack server connection.
 <br/></br>
-## Installation
+## 📑 Installation
 
 Clone this repository into your ROS 2 workspace `src` folder:
 
@@ -36,7 +36,7 @@ Clone this repository into your ROS 2 workspace `src` folder:
    git clone https://github.com/jwleesnu/ros2_optitrack_bridge.git
    ```
 
-## Usage
+## 📑 Usage
 
 ### pose node
 

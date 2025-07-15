@@ -1,5 +1,6 @@
-#include "optitrack_bridge2/optitrack_bridge_px4_node.h"
+#include "optitrack_bridge2/optitrack_bridge_final_node.h"
 #include "optitrack_bridge2/natnet_wrapper.h"
+#include "optitrack_bridge2/linear_kalman_filter.h"
 #include <rclcpp/rclcpp.hpp>
 #include <px4_msgs/msg/vehicle_odometry.hpp>
 
@@ -7,7 +8,7 @@ using namespace std::chrono_literals;
 
 namespace optitrack {
 
-OptitrackBridgePX4Node::OptitrackBridgePX4Node() : rclcpp::Node("optitrack_px4") {
+OptitrackBridgeFinalNode::OptitrackBridgeFinalNode() : rclcpp::Node("optitrack_final") {
 
     // parameter setting
     this->declare_parameter<std::string>("pose_prefix", "optitrack");
@@ -19,7 +20,7 @@ OptitrackBridgePX4Node::OptitrackBridgePX4Node() : rclcpp::Node("optitrack_px4")
 
     timer_ = this->create_wall_timer(
         std::chrono::operator""s(1.0 / hz_),
-        std::bind(&OptitrackBridgePX4Node::loop_, this)
+        std::bind(&OptitrackBridgeFinalNode::loop_, this)
     );
     
     natnet_wrapper::NatNetWrapper::set_logger(this->get_logger());
@@ -29,7 +30,7 @@ OptitrackBridgePX4Node::OptitrackBridgePX4Node() : rclcpp::Node("optitrack_px4")
     // publisher_vehicle_mocap_odometry_ = this->create_publisher<px4_msgs::msg::VehicleOdometry>("/fmu/in/vehicle_mocap_odometry", 1);
 }
 
-void OptitrackBridgePX4Node::loop_() {
+void OptitrackBridgeFinalNode::loop_() {
 
     static bool initialized = false;
     if(!initialized) {
@@ -55,11 +56,19 @@ void OptitrackBridgePX4Node::loop_() {
         RCLCPP_WARN(this->get_logger(), "only one body can be linked to a px4");
         return;
     }
-    
+    const std::string &name = body_names_[0];
     const auto &pose_msg = poses_[0];
     
     px4_msgs::msg::VehicleOdometry visual_odom_msg;
     // px4_msgs::msg::VehicleOdometry mocap_odom_msg;
+
+    if (kalman_filters_.find(name) == kalman_filters_.end()) {
+        kalman_filters_[name] = std::make_shared<LinearKalmanFilter>();
+    }
+    auto &filter = kalman_filters_[name];
+    filter->pose_cb(pose_msg);
+
+    Eigen::Vector3d lin_vel = filter->getVelocity();
     
 
     visual_odom_msg.timestamp = this->now().nanoseconds() / 1000;
@@ -85,6 +94,23 @@ void OptitrackBridgePX4Node::loop_() {
     visual_odom_msg.q[2] = -pose_msg.pose.orientation.y;
     visual_odom_msg.q[3] = -pose_msg.pose.orientation.z;
 
+
+    float nan_val = std::numeric_limits<float>::quiet_NaN();
+    // visual_odom_msg.velocity[0] = lin_vel.x();
+    // visual_odom_msg.velocity[1] = -lin_vel.y();
+    // visual_odom_msg.velocity[2] = -lin_vel.z();
+    visual_odom_msg.velocity[0] = nan_val;
+    visual_odom_msg.velocity[1] = nan_val;
+    visual_odom_msg.velocity[2] = nan_val;
+
+    visual_odom_msg.position_variance[0] = 0.0001;
+    visual_odom_msg.position_variance[1] = 0.0001;
+    visual_odom_msg.position_variance[2] = 0.0001;
+
+    visual_odom_msg.orientation_variance[0] = 0.001;
+    visual_odom_msg.orientation_variance[1] = 0.001;
+    visual_odom_msg.orientation_variance[2] = 0.0005;
+    
     // mocap_odom_msg.q[0] = pose_msg.pose.orientation.x;
     // mocap_odom_msg.q[1] = -pose_msg.pose.orientation.y;
     // mocap_odom_msg.q[2] = -pose_msg.pose.orientation.z;
@@ -93,12 +119,12 @@ void OptitrackBridgePX4Node::loop_() {
     visual_odom_msg.velocity_frame = 1;
     // mocap_odom_msg.velocity_frame = 1;
 
-    float nan_val = std::numeric_limits<float>::quiet_NaN();
     for (int i = 0; i < 3; ++i) {
-        visual_odom_msg.velocity[i] = nan_val;
         visual_odom_msg.angular_velocity[i] = nan_val;
-        visual_odom_msg.position_variance[i] = nan_val;
-        visual_odom_msg.orientation_variance[i] = nan_val;
+
+        // visual_odom_msg.position_variance[i] = nan_val;
+        // visual_odom_msg.orientation_variance[i] = nan_val;
+
         visual_odom_msg.velocity_variance[i] = nan_val;
     }
     // for (int i = 0; i < 3; ++i) {
@@ -119,7 +145,7 @@ void OptitrackBridgePX4Node::loop_() {
 
 int main(int argc, char** argv) {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<optitrack::OptitrackBridgePX4Node>());
+    rclcpp::spin(std::make_shared<optitrack::OptitrackBridgeFinalNode>());
     rclcpp::shutdown();
     return 0;
 }

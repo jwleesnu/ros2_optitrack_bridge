@@ -61,17 +61,31 @@ add_executable(px4
     src/optitrack_bridge_px4.cpp
     src/natnet_wrapper.cpp
 )
-ament_target_dependencies(px4 rclcpp std_msgs geometry_msgs px4_msgs)
+ament_target_dependencies(px4 
+    rclcpp std_msgs geometry_msgs px4_msgs)
 
 add_executable(dummy
     src/optitrack_dummy.cpp
 )
-ament_target_dependencies(dummy rclcpp std_msgs geometry_msgs px4_msgs)
+ament_target_dependencies(dummy 
+    rclcpp std_msgs geometry_msgs px4_msgs)
+
+add_executable(final
+    src/optitrack_bridge_final.cpp
+    src/linear_kalman_filter.cpp
+    src/natnet_wrapper.cpp
+)
+ament_target_dependencies(final 
+    rclcpp std_msgs geometry_msgs px4_msgs nav_msgs)
+target_include_directories(final PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    ${EIGEN3_INCLUDE_DIR}
+)
 
 target_link_libraries(pose ${natnet_lib})
 target_link_libraries(odometry ${natnet_lib})
 target_link_libraries(px4 ${natnet_lib})
-
+target_link_libraries(final ${natnet_lib})
 
 # install
 ament_export_libraries(${natnet_lib})
@@ -89,6 +103,10 @@ install(
 )
 install(
     TARGETS dummy
+    DESTINATION lib/${PROJECT_NAME}
+)
+install(
+    TARGETS final
     DESTINATION lib/${PROJECT_NAME}
 )
 install(FILES
